@@ -1,0 +1,243 @@
+.color-picker-actions .secondary-button,
+.harmony-downloads .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.mode-grid {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.mode-grid button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.mode-grid button.active {
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.random-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr);
+  gap: 1rem;
+}
+
+.random-workbench > .mode-grid,
+.random-guidance {
+  grid-column: 1 / -1;
+}
+
+.random-workbench > .mode-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0;
+}
+
+.random-settings-panel,
+.random-output-panel {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.random-output-panel {
+  align-self: start;
+}
+
+.random-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.random-section-heading h2 {
+  margin: .15rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.random-section-heading svg {
+  width: 20px;
+  color: var(--color-accent);
+}
+
+.random-section-heading > span {
+  display: grid;
+  min-width: 34px;
+  min-height: 34px;
+  place-items: center;
+  color: var(--color-accent);
+  font-size: .78rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
+}
+
+.random-inline-check {
+  width: fit-content;
+  margin-top: .75rem;
+}
+
+.random-custom-alphabet {
+  display: grid;
+  gap: .35rem;
+  margin-top: .8rem;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.random-custom-alphabet input {
+  min-height: 42px;
+  padding: .6rem .7rem;
+  color: var(--color-text);
+  font: .86rem ui-monospace, SFMono-Regular, Consolas, monospace;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.random-custom-alphabet small,
+.random-list-stats {
+  color: var(--color-text-muted);
+  font-size: .7rem;
+  font-weight: 450;
+}
+
+.random-entropy {
+  position: relative;
+  display: grid;
+  gap: .35rem;
+  margin-top: .8rem;
+  padding-top: .55rem;
+}
+
+.random-entropy::before,
+.random-entropy > span {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  border-radius: 999px;
+}
+
+.random-entropy::before {
+  content: "";
+  background: var(--color-border);
+}
+
+.random-entropy > span {
+  max-width: 100%;
+  background: var(--color-accent);
+}
+
+.random-entropy strong {
+  margin-top: .25rem;
+  font-size: .8rem;
+}
+
+.random-entropy small {
+  color: var(--color-text-muted);
+  font-size: .7rem;
+  line-height: 1.45;
+}
+
+.random-list-stats {
+  margin-top: .45rem;
+  text-align: right;
+}
+
+.random-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-bottom: .8rem;
+}
+
+.random-presets button {
+  min-width: 44px;
+  min-height: 36px;
+  color: var(--color-text-muted);
+  font: 600 .76rem ui-monospace, SFMono-Regular, Consolas, monospace;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.random-presets button.active {
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.random-settings-panel .tool-actions,
+.random-output-panel .tool-actions {
+  margin-bottom: 0;
+}
+
+.random-settings-panel .secondary-button,
+.random-output-panel .download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+}
+
+.random-settings-panel .secondary-button svg,
+.random-output-panel .download-button svg {
+  width: 16px;
+}
+
+.random-result {
+  min-height: 100px;
+  max-height: 430px;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font: 1rem/1.55 ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+
+.random-summary {
+  margin: .7rem 0 0;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.random-guidance {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+.random-workbench {
+    grid-template-columns: 1fr;
+  }
+
+.random-workbench > .mode-grid,
+.random-guidance {
+    grid-column: auto;
+  }
+
+.random-workbench > .mode-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
