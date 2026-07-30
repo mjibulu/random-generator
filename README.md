@@ -4,15 +4,25 @@ Generate unbiased browser-random numbers, strings, passwords, dice rolls, coin f
 
 ## Features
 
-- Unbiased integer generation with rejection sampling
-- Configurable strings and passwords
-- Number, dice, coin, and list-shuffle modes
-- Ambiguous-character exclusion and strength feedback
-- Bounded batches with copy and download
+- Unbiased cryptographic integer generation with configurable ranges, decimals, ordering, and uniqueness
+- Random strings from selected character groups or a custom alphabet
+- Password generation with required character groups, ambiguous-character exclusion, and entropy feedback
+- List picking without repeats or complete list shuffling with duplicate and case controls
+- Common dice presets, custom dice up to one million sides, and multi-die rolls
+- Single or repeated coin flips with bounded result quantities
+- Clear result summaries plus copy and tool-named text downloads
 
 ## Screenshot
 
 ![Secure Random Generator interface](./public/tool-preview.webp)
+
+## How to use
+
+1. Choose Numbers, Strings, Passwords, List, Dice, or Coin mode.
+2. Configure the range, alphabet, length, list rules, dice, or flip count shown for that mode.
+3. For passwords, review the selected character groups and strength estimate before generating.
+4. Generate the values and review the result count and mode-specific summary.
+5. Copy or download the results, clear them, or generate a fresh set.
 
 ## Browser support and limitations
 

@@ -52,9 +52,11 @@ export function App() {
           <summary>How to use this tool</summary>
           <div className="information-content">
             <ol>
-            <li>{"Choose a random-value mode and configure its permitted options."}</li>
-            <li>{"Generate one value or a bounded batch and review any strength feedback."}</li>
-            <li>{"Copy or download the results, or regenerate them when new values are needed."}</li>
+            <li>{"Choose Numbers, Strings, Passwords, List, Dice, or Coin mode."}</li>
+            <li>{"Configure the range, alphabet, length, list rules, dice, or flip count shown for that mode."}</li>
+            <li>{"For passwords, review the selected character groups and strength estimate before generating."}</li>
+            <li>{"Generate the values and review the result count and mode-specific summary."}</li>
+            <li>{"Copy or download the results, clear them, or generate a fresh set."}</li>
             </ol>
           </div>
         </details>
