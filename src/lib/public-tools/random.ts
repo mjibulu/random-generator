@@ -1,13 +1,40 @@
 export type RandomSort = "generated" | "ascending" | "descending";
 
+export type RandomErrorCode =
+  | "invalid_integer_range"
+  | "range_too_large"
+  | "alphabet_too_small"
+  | "invalid_range"
+  | "invalid_quantity"
+  | "invalid_decimal_places"
+  | "precision_range_empty"
+  | "precision_range_too_large"
+  | "unique_values_unavailable";
+
+export class RandomToolError extends Error {
+  constructor(
+    public readonly code: RandomErrorCode,
+    message: string,
+    public readonly values: Readonly<Record<string, number>> = {},
+  ) {
+    super(message);
+    this.name = "RandomToolError";
+  }
+}
+
 export function secureRandomInt(minimum: number, maximum: number): number {
   const low = Math.ceil(minimum);
   const high = Math.floor(maximum);
   if (!Number.isSafeInteger(low) || !Number.isSafeInteger(high) || high < low) {
-    throw new Error("Enter a valid integer range.");
+    throw new RandomToolError(
+      "invalid_integer_range",
+      "Enter a valid integer range.",
+    );
   }
   const range = high - low + 1;
-  if (range > 0x1_0000_0000) throw new Error("The range is too large.");
+  if (range > 0x1_0000_0000) {
+    throw new RandomToolError("range_too_large", "The range is too large.");
+  }
   const limit = Math.floor(0x1_0000_0000 / range) * range;
   const values = new Uint32Array(1);
   do crypto.getRandomValues(values);
@@ -19,7 +46,10 @@ export function secureRandomString(length: number, alphabet: string): string {
   const safeLength = Math.min(4096, Math.max(1, Math.floor(length)));
   const characters = Array.from(alphabet);
   if (characters.length < 2) {
-    throw new Error("Choose at least two possible characters.");
+    throw new RandomToolError(
+      "alphabet_too_small",
+      "Choose at least two possible characters.",
+    );
   }
   return Array.from(
     { length: safeLength },
@@ -43,6 +73,7 @@ export function generateRandomNumbers(options: {
   decimalPlaces?: number;
   unique?: boolean;
   sort?: RandomSort;
+  locale?: string;
 }): string[] {
   const {
     minimum,
@@ -51,37 +82,55 @@ export function generateRandomNumbers(options: {
     decimalPlaces = 0,
     unique = false,
     sort = "generated",
+    locale = "en",
   } = options;
   if (
     !Number.isFinite(minimum) ||
     !Number.isFinite(maximum) ||
     maximum < minimum
   ) {
-    throw new Error("Maximum must be greater than or equal to minimum.");
+    throw new RandomToolError(
+      "invalid_range",
+      "Maximum must be greater than or equal to minimum.",
+    );
   }
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
-    throw new Error("Quantity must be between 1 and 100.");
+    throw new RandomToolError(
+      "invalid_quantity",
+      "Quantity must be between 1 and 100.",
+    );
   }
   if (
     !Number.isInteger(decimalPlaces) ||
     decimalPlaces < 0 ||
     decimalPlaces > 6
   ) {
-    throw new Error("Decimal places must be between 0 and 6.");
+    throw new RandomToolError(
+      "invalid_decimal_places",
+      "Decimal places must be between 0 and 6.",
+    );
   }
   const scale = 10 ** decimalPlaces;
   const low = Math.ceil(minimum * scale);
   const high = Math.floor(maximum * scale);
   if (!Number.isSafeInteger(low) || !Number.isSafeInteger(high) || high < low) {
-    throw new Error("The range has no values at the selected precision.");
+    throw new RandomToolError(
+      "precision_range_empty",
+      "The range has no values at the selected precision.",
+    );
   }
   const available = high - low + 1;
   if (available > 0x1_0000_0000) {
-    throw new Error("Reduce the range or decimal precision.");
+    throw new RandomToolError(
+      "precision_range_too_large",
+      "Reduce the range or decimal precision.",
+    );
   }
   if (unique && quantity > available) {
-    throw new Error(
-      `Only ${available.toLocaleString()} unique values exist in this range.`,
+    throw new RandomToolError(
+      "unique_values_unavailable",
+      `Only ${available.toLocaleString(locale)} unique values exist in this range.`,
+      { available },
     );
   }
 
@@ -98,11 +147,12 @@ export function generateRandomNumbers(options: {
       sort === "ascending" ? first - second : second - first,
     );
   }
-  return values.map((value) =>
-    decimalPlaces
-      ? (value / scale).toFixed(decimalPlaces)
-      : value.toString(),
-  );
+  const formatter = new Intl.NumberFormat(locale, {
+    useGrouping: false,
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  });
+  return values.map((value) => formatter.format(value / scale));
 }
 
 export function uniqueCharacters(value: string): string {
@@ -118,6 +168,7 @@ export function prepareRandomList(
   source: string,
   removeDuplicates = true,
   caseSensitive = false,
+  locale = "en",
 ): string[] {
   const items = source
     .split(/\r?\n/gu)
@@ -126,7 +177,7 @@ export function prepareRandomList(
   if (!removeDuplicates) return items;
   const seen = new Set<string>();
   return items.filter((item) => {
-    const key = caseSensitive ? item : item.toLocaleLowerCase();
+    const key = caseSensitive ? item : item.toLocaleLowerCase(locale);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

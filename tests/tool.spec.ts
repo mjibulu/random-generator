@@ -16,7 +16,7 @@ test("number, password, and dice generation stay local", async ({
     .getByRole("checkbox", { name: "Do not repeat values" })
     .check();
   await page
-    .getByRole("combobox", { name: "Result order" })
+    .getByRole("combobox", { name: "Order" })
     .selectOption("ascending");
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.locator(".random-result")).toHaveText("1\n2\n3");

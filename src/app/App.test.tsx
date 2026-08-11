@@ -4,7 +4,7 @@ import { App } from "./App";
 
 function resultLines() {
   return screen
-    .getByText("Generated values")
+    .getByText("Results")
     .closest("section")
     ?.querySelector(".random-result")
     ?.textContent?.split("\n");
@@ -23,13 +23,13 @@ describe("Random Generator", () => {
       screen.getByRole("checkbox", { name: "Do not repeat values" }),
     );
     await user.selectOptions(
-      screen.getByRole("combobox", { name: "Result order" }),
+      screen.getByRole("combobox", { name: "Order" }),
       "ascending",
     );
     await user.click(screen.getByRole("button", { name: "Generate" }));
 
     expect(resultLines()).toEqual(["1", "2", "3"]);
-    expect(screen.getByText(/3 integer values without repeats/u)).toBeInTheDocument();
+    expect(screen.getByText("3 integer values.")).toBeInTheDocument();
   });
 
   it("creates passwords with every selected character group", async () => {
@@ -55,7 +55,7 @@ describe("Random Generator", () => {
       ).toBe(true);
     }
     expect(
-      within(screen.getByLabelText("Password strength estimate")).getByText(
+      within(screen.getByLabelText("Password strength")).getByText(
         /bits/u,
       ),
     ).toBeInTheDocument();
