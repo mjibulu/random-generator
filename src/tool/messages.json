@@ -1,0 +1,114 @@
+{
+  "tools": {
+    "utilities": {
+      "random-generator": {
+        "tool": {
+          "modesAria": "Random generator mode",
+          "modes": {
+            "number": "Numbers",
+            "string": "Strings",
+            "password": "Passwords",
+            "list": "List picker",
+            "dice": "Dice",
+            "coin": "Coins"
+          },
+          "errors": {
+            "count": "{label} must be between 1 and 100.",
+            "quantity": "Quantity",
+            "diceCount": "Number of dice",
+            "coinCount": "Number of flips",
+            "pickCount": "Items to pick",
+            "characterGroup": "Choose at least one character group.",
+            "passwordLength": "Password length must be between {minimum} and 4,096.",
+            "stringLength": "String length must be between 1 and 4,096.",
+            "stringAlphabet": "Choose at least two different characters.",
+            "diceSides": "Dice sides must be between 2 and 1,000,000.",
+            "emptyList": "Enter at least one list item.",
+            "pickUnavailable": "Only {available, plural, one {# available item can} other {# available items can}} be picked without repeats.",
+            "invalidRange": "Maximum must be greater than or equal to minimum.",
+            "decimalPlaces": "Decimal places must be between 0 and 6.",
+            "precisionRange": "The range has no values at the selected precision.",
+            "rangeTooLarge": "Reduce the range or decimal precision.",
+            "uniqueUnavailable": "Only {available, plural, one {# unique value exists} other {# unique values exist}} in this range.",
+            "invalidIntegerRange": "Enter a valid integer range.",
+            "generic": "Check the settings and try again."
+          },
+          "settings": {
+            "eyebrow": "",
+            "minimum": "Minimum",
+            "maximum": "Maximum",
+            "howMany": "How many",
+            "decimalPlaces": "Decimal places",
+            "integers": "Integers",
+            "resultOrder": "Order",
+            "generatedOrder": "Generated",
+            "lowestFirst": "Lowest",
+            "highestFirst": "Highest",
+            "noRepeats": "Do not repeat values",
+            "length": "Length",
+            "groupsAria": "Character groups",
+            "lowercase": "Lowercase",
+            "uppercase": "Uppercase",
+            "numbers": "Numbers",
+            "symbols": "Symbols",
+            "excludeAmbiguous": "Exclude ambiguous characters",
+            "customCharacters": "Custom characters",
+            "customPlaceholder": "",
+            "uniqueCharacters": "{count} characters",
+            "strengthAria": "Password strength",
+            "entropy": {
+              "limited": "{bits} bits · limited",
+              "moderate": "{bits} bits · moderate",
+              "strong": "{bits} bits · strong",
+              "veryStrong": "{bits} bits · very strong"
+            },
+            "entropyHint": "",
+            "listItems": "List items",
+            "availableItems": "{count, plural, one {# available item} other {# available items}}",
+            "listAction": "Action",
+            "pickWithoutRepeats": "Pick",
+            "shuffleAll": "Shuffle",
+            "itemsToPick": "Pick count",
+            "removeDuplicates": "Remove duplicate items",
+            "caseSensitive": "Match letter case",
+            "commonDiceAria": "Common dice",
+            "diceCount": "Number of dice",
+            "diceSides": "Sides per die",
+            "coinCount": "Number of flips",
+            "generate": "Generate",
+            "clear": "Clear"
+          },
+          "summary": {
+            "number": "{count, plural, one {# {kind} value} other {# {kind} values}}.",
+            "integer": "integer",
+            "decimal": "decimal",
+            "string": "{count, plural, one {# string} other {# strings}}.",
+            "password": "{count, plural, one {# password} other {# passwords}} · {entropy}.",
+            "dice": "{notation} · total {total} · range {minimum}–{maximum}.",
+            "coin": "{heads, plural, one {# head} other {# heads}} · {tails, plural, one {# tail} other {# tails}} · {count, plural, one {# flip} other {# flips}}.",
+            "picked": "{picked} of {available} selected.",
+            "shuffled": "{count, plural, one {# item} other {# items}} shuffled."
+          },
+          "coin": {
+            "heads": "Heads",
+            "tails": "Tails"
+          },
+          "result": {
+            "eyebrow": "",
+            "generated": "Results",
+            "ready": "Ready",
+            "empty": "",
+            "copy": "Copy",
+            "download": "Download",
+            "filename": "random-{mode}-results.txt"
+          },
+          "guidance": {
+            "password": "",
+            "chance": "Not for regulated or high-stakes decisions.",
+            "random": ""
+          }
+        }
+      }
+    }
+  }
+}

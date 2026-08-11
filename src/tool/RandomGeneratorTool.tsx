@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "use-intl";
 import { Download, RotateCcw, Sparkles } from "lucide-react";
 import { CopyButton } from "../components/CopyButton";
 import { DownloadButton } from "../components/DownloadButton";
@@ -6,27 +7,26 @@ import { OptionField } from "../components/OptionField";
 import { TextField } from "../components/TextWorkspace";
 import { ToolActions } from "../components/ToolActions";
 import { ValidationMessage } from "../components/ValidationMessage";
+import { classifyRandomError } from "../lib/public-tools/randomErrors";
 import { generateRandomNumbers, passwordEntropyBits, prepareRandomList, secureRandomInt, secureRandomString, secureShuffle, uniqueCharacters, type RandomSort, } from "../lib/public-tools/random";
 type Mode = "number" | "string" | "password" | "list" | "dice" | "coin";
+type LocalErrorKey = "count" | "characterGroup" | "passwordLength" | "stringLength" | "stringAlphabet" | "diceSides" | "emptyList" | "pickUnavailable";
+type ErrorValues = Readonly<Record<string, string | number>>;
+class RandomGeneratorError extends Error {
+    constructor(public readonly key: LocalErrorKey, public readonly values: ErrorValues = {}) {
+        super(key);
+        this.name = "RandomGeneratorError";
+    }
+}
 const lowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
 const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const digits = "0123456789";
 const symbols = "!@#$%^&*()-_=+[]{}";
 const ambiguous = /[0O1Il|`'"]/gu;
-const MODES: Array<{
-    value: Mode;
-    label: string;
-}> = [
-    { value: "number", label: "Numbers" },
-    { value: "string", label: "Strings" },
-    { value: "password", label: "Passwords" },
-    { value: "list", label: "List picker" },
-    { value: "dice", label: "Dice" },
-    { value: "coin", label: "Coins" },
-];
-function validateCount(value: number, label = "Quantity") {
+const MODES: Mode[] = ["number", "string", "password", "list", "dice", "coin"];
+function validateCount(value: number, label: string) {
     if (!Number.isInteger(value) || value < 1 || value > 100) {
-        throw new Error(`${label} must be between 1 and 100.`);
+        throw new RandomGeneratorError("count", { label });
     }
 }
 function buildPassword(length: number, groups: string[]): string {
@@ -34,12 +34,14 @@ function buildPassword(length: number, groups: string[]): string {
         .map(uniqueCharacters)
         .filter((group) => group.length > 0);
     if (!availableGroups.length) {
-        throw new Error("Choose at least one character group.");
+        throw new RandomGeneratorError("characterGroup");
     }
     if (!Number.isInteger(length) ||
         length < availableGroups.length ||
         length > 4096) {
-        throw new Error(`Password length must be between ${availableGroups.length} and 4,096.`);
+        throw new RandomGeneratorError("passwordLength", {
+            minimum: availableGroups.length,
+        });
     }
     const required = availableGroups.map((group) => group[secureRandomInt(0, group.length - 1)]);
     const alphabet = uniqueCharacters(availableGroups.join(""));
@@ -49,16 +51,18 @@ function buildPassword(length: number, groups: string[]): string {
         : "";
     return secureShuffle([...required, ...remaining]).join("");
 }
-function formatEntropy(bits: number) {
+function entropyLevel(bits: number) {
     if (bits < 50)
-        return `${Math.round(bits)} bits · limited`;
+        return "limited" as const;
     if (bits < 80)
-        return `${Math.round(bits)} bits · moderate`;
+        return "moderate" as const;
     if (bits < 120)
-        return `${Math.round(bits)} bits · strong`;
-    return `${Math.round(bits)} bits · very strong`;
+        return "strong" as const;
+    return "veryStrong" as const;
 }
 export function RandomGeneratorTool() {
+    const t = useTranslations("tools.utilities.random-generator.tool");
+    const locale = useLocale();
     const [mode, setMode] = useState<Mode>("number");
     const [min, setMin] = useState(1);
     const [max, setMax] = useState(100);
@@ -83,7 +87,10 @@ export function RandomGeneratorTool() {
     const [coinCount, setCoinCount] = useState(1);
     const [result, setResult] = useState<string[]>([]);
     const [summary, setSummary] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] = useState<{
+        key: string;
+        values?: ErrorValues;
+    } | null>(null);
     const selectedGroups = useMemo(() => {
         const groups = [
             includeLowercase ? lowercaseLetters : "",
@@ -105,12 +112,15 @@ export function RandomGeneratorTool() {
     const generatedAlphabet = uniqueCharacters(selectedGroups.join(""));
     const activeStringAlphabet = uniqueCharacters(customAlphabet || generatedAlphabet);
     const entropy = passwordEntropyBits(length, generatedAlphabet.length);
-    const preparedList = prepareRandomList(list, removeDuplicates, caseSensitiveItems);
+    const entropyText = t(`settings.entropy.${entropyLevel(entropy)}`, {
+        bits: Math.round(entropy),
+    });
+    const preparedList = prepareRandomList(list, removeDuplicates, caseSensitiveItems, locale);
     const resultText = result.join("\n");
     const clearResult = () => {
         setResult([]);
         setSummary("");
-        setError("");
+        setError(null);
     };
     const generate = () => {
         try {
@@ -124,258 +134,298 @@ export function RandomGeneratorTool() {
                     decimalPlaces,
                     unique: uniqueNumbers,
                     sort: numberSort,
+                    locale,
                 });
-                nextSummary = `${nextResult.length} ${decimalPlaces ? "decimal" : "integer"} value${nextResult.length === 1 ? "" : "s"}${uniqueNumbers ? " without repeats" : ""}.`;
+                nextSummary = t("summary.number", {
+                    count: nextResult.length,
+                    kind: t(decimalPlaces ? "summary.decimal" : "summary.integer"),
+                    unique: String(uniqueNumbers),
+                });
             }
             else if (mode === "string") {
-                validateCount(quantity);
+                validateCount(quantity, t("errors.quantity"));
                 if (!Number.isInteger(length) || length < 1 || length > 4096) {
-                    throw new Error("String length must be between 1 and 4,096.");
+                    throw new RandomGeneratorError("stringLength");
                 }
                 if (activeStringAlphabet.length < 2) {
-                    throw new Error("Choose at least two different characters.");
+                    throw new RandomGeneratorError("stringAlphabet");
                 }
                 nextResult = Array.from({ length: quantity }, () => secureRandomString(length, activeStringAlphabet));
-                nextSummary = `${quantity} string${quantity === 1 ? "" : "s"} using ${activeStringAlphabet.length.toLocaleString()} possible characters.`;
+                nextSummary = t("summary.string", {
+                    count: quantity,
+                    characters: activeStringAlphabet.length,
+                });
             }
             else if (mode === "password") {
-                validateCount(quantity);
+                validateCount(quantity, t("errors.quantity"));
                 nextResult = Array.from({ length: quantity }, () => buildPassword(length, selectedGroups));
-                nextSummary = `${quantity} password${quantity === 1 ? "" : "s"} · ${formatEntropy(entropy)} estimated entropy each.`;
+                nextSummary = t("summary.password", {
+                    count: quantity,
+                    entropy: entropyText,
+                });
             }
             else if (mode === "dice") {
-                validateCount(diceCount, "Number of dice");
+                validateCount(diceCount, t("errors.diceCount"));
                 if (!Number.isInteger(diceSides) ||
                     diceSides < 2 ||
                     diceSides > 1000000) {
-                    throw new Error("Dice sides must be between 2 and 1,000,000.");
+                    throw new RandomGeneratorError("diceSides");
                 }
                 const rolls = Array.from({ length: diceCount }, () => secureRandomInt(1, diceSides));
                 nextResult = rolls.map(String);
                 const total = rolls.reduce((sum, value) => sum + value, 0);
-                nextSummary = `${diceCount}d${diceSides} · total ${total} · range ${Math.min(...rolls)}–${Math.max(...rolls)}.`;
+                nextSummary = t("summary.dice", {
+                    notation: `${diceCount}d${diceSides}`,
+                    total,
+                    minimum: Math.min(...rolls),
+                    maximum: Math.max(...rolls),
+                });
             }
             else if (mode === "coin") {
-                validateCount(coinCount, "Number of flips");
-                nextResult = Array.from({ length: coinCount }, () => secureRandomInt(0, 1) === 0 ? "Heads" : "Tails");
-                const heads = nextResult.filter((value) => value === "Heads").length;
-                nextSummary = `${heads} heads · ${coinCount - heads} tails · ${coinCount} flip${coinCount === 1 ? "" : "s"}.`;
+                validateCount(coinCount, t("errors.coinCount"));
+                nextResult = Array.from({ length: coinCount }, () => secureRandomInt(0, 1) === 0 ? t("coin.heads") : t("coin.tails"));
+                const heads = nextResult.filter((value) => value === t("coin.heads")).length;
+                nextSummary = t("summary.coin", {
+                    heads,
+                    tails: coinCount - heads,
+                    count: coinCount,
+                });
             }
             else {
                 if (!preparedList.length) {
-                    throw new Error("Enter at least one list item.");
+                    throw new RandomGeneratorError("emptyList");
                 }
                 const shuffled = secureShuffle(preparedList);
                 if (listAction === "pick") {
-                    validateCount(pickCount, "Items to pick");
+                    validateCount(pickCount, t("errors.pickCount"));
                     if (pickCount > preparedList.length) {
-                        throw new Error(`Only ${preparedList.length} available item${preparedList.length === 1 ? "" : "s"} can be picked without repeats.`);
+                        throw new RandomGeneratorError("pickUnavailable", {
+                            available: preparedList.length,
+                        });
                     }
                     nextResult = shuffled.slice(0, pickCount);
-                    nextSummary = `Picked ${pickCount} of ${preparedList.length} available items without repeats.`;
+                    nextSummary = t("summary.picked", {
+                        picked: pickCount,
+                        available: preparedList.length,
+                    });
                 }
                 else {
                     nextResult = shuffled;
-                    nextSummary = `Shuffled all ${preparedList.length} available items.`;
+                    nextSummary = t("summary.shuffled", { count: preparedList.length });
                 }
             }
             setResult(nextResult);
             setSummary(nextSummary);
-            setError("");
+            setError(null);
         }
         catch (reason) {
-            setError(reason instanceof Error
-                ? reason.message
-                : "Check the settings and try again.");
+            if (reason instanceof RandomGeneratorError) {
+                setError({ key: reason.key, values: reason.values });
+            }
+            else {
+                const classified = classifyRandomError(reason);
+                setError({
+                    key: classified.key,
+                    values: classified.key === "count"
+                        ? { ...classified.values, label: t("errors.quantity") }
+                        : classified.values,
+                });
+            }
         }
     };
-    const characterOptions = (<div className="checkbox-row" aria-label="Character groups">
+    const characterOptions = (<div className="checkbox-row" aria-label={t("settings.groupsAria")}>
       <label className="checkbox-field">
         <input type="checkbox" checked={includeLowercase} onChange={(event) => setIncludeLowercase(event.target.checked)}/>
-        Lowercase
+        {t("settings.lowercase")}
       </label>
       <label className="checkbox-field">
         <input type="checkbox" checked={includeUppercase} onChange={(event) => setIncludeUppercase(event.target.checked)}/>
-        Uppercase
+        {t("settings.uppercase")}
       </label>
       <label className="checkbox-field">
         <input type="checkbox" checked={includeNumbers} onChange={(event) => setIncludeNumbers(event.target.checked)}/>
-        Numbers
+        {t("settings.numbers")}
       </label>
       {mode === "password" ? (<label className="checkbox-field">
           <input type="checkbox" checked={includeSymbols} onChange={(event) => setIncludeSymbols(event.target.checked)}/>
-          Symbols
+          {t("settings.symbols")}
         </label>) : null}
       <label className="checkbox-field">
         <input type="checkbox" checked={excludeAmbiguous} onChange={(event) => setExcludeAmbiguous(event.target.checked)}/>
-        Exclude ambiguous characters
+        {t("settings.excludeAmbiguous")}
       </label>
     </div>);
     return (<div className="random-workbench">
-      <div className="mode-grid" role="tablist" aria-label="Random generator mode">
-        {MODES.map((item) => (<button type="button" role="tab" aria-selected={mode === item.value} className={mode === item.value ? "active" : ""} key={item.value} onClick={() => {
-                setMode(item.value);
+      <div className="mode-grid" role="tablist" aria-label={t("modesAria")}>
+        {MODES.map((item) => (<button type="button" role="tab" aria-selected={mode === item} className={mode === item ? "active" : ""} key={item} onClick={() => {
+                setMode(item);
                 clearResult();
             }}>
-            {item.label}
+            {t(`modes.${item}`)}
           </button>))}
       </div>
 
       <section className="random-settings-panel">
         <div className="random-section-heading">
           <div>
-            <p className="eyebrow">Settings</p>
-            <h2>{MODES.find((item) => item.value === mode)?.label}</h2>
+            <p className="eyebrow">{t("settings.eyebrow")}</p>
+            <h2>{t(`modes.${mode}`)}</h2>
           </div>
           <Sparkles aria-hidden="true"/>
         </div>
 
         {mode === "number" ? (<>
             <div className="option-row">
-              <OptionField label="Minimum" htmlFor="random-min">
+              <OptionField label={t("settings.minimum")} htmlFor="random-min">
                 <input id="random-min" type="number" step="any" value={min} onChange={(event) => setMin(Number(event.target.value))}/>
               </OptionField>
-              <OptionField label="Maximum" htmlFor="random-max">
+              <OptionField label={t("settings.maximum")} htmlFor="random-max">
                 <input id="random-max" type="number" step="any" value={max} onChange={(event) => setMax(Number(event.target.value))}/>
               </OptionField>
-              <OptionField label="How many" htmlFor="random-quantity">
+              <OptionField label={t("settings.howMany")} htmlFor="random-quantity">
                 <input id="random-quantity" type="number" min="1" max="100" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))}/>
               </OptionField>
-              <OptionField label="Decimal places" htmlFor="random-decimals">
+              <OptionField label={t("settings.decimalPlaces")} htmlFor="random-decimals">
                 <select id="random-decimals" value={decimalPlaces} onChange={(event) => setDecimalPlaces(Number(event.target.value))}>
                   {[0, 1, 2, 3, 4, 5, 6].map((value) => (<option value={value} key={value}>
-                      {value === 0 ? "Integers" : value}
+                      {value === 0 ? t("settings.integers") : value}
                     </option>))}
                 </select>
               </OptionField>
-              <OptionField label="Result order" htmlFor="random-sort">
+              <OptionField label={t("settings.resultOrder")} htmlFor="random-sort">
                 <select id="random-sort" value={numberSort} onChange={(event) => setNumberSort(event.target.value as RandomSort)}>
-                  <option value="generated">Generated order</option>
-                  <option value="ascending">Lowest first</option>
-                  <option value="descending">Highest first</option>
+                  <option value="generated">
+                    {t("settings.generatedOrder")}
+                  </option>
+                  <option value="ascending">{t("settings.lowestFirst")}</option>
+                  <option value="descending">
+                    {t("settings.highestFirst")}
+                  </option>
                 </select>
               </OptionField>
             </div>
             <label className="checkbox-field random-inline-check">
               <input type="checkbox" checked={uniqueNumbers} onChange={(event) => setUniqueNumbers(event.target.checked)}/>
-              Do not repeat values
+              {t("settings.noRepeats")}
             </label>
           </>) : null}
 
         {mode === "string" || mode === "password" ? (<>
             <div className="option-row">
-              <OptionField label="Length" htmlFor="random-length">
+              <OptionField label={t("settings.length")} htmlFor="random-length">
                 <input id="random-length" type="number" min={mode === "password" ? selectedGroups.length || 1 : 1} max="4096" value={length} onChange={(event) => setLength(Number(event.target.value))}/>
               </OptionField>
-              <OptionField label="How many" htmlFor="random-string-quantity">
+              <OptionField label={t("settings.howMany")} htmlFor="random-string-quantity">
                 <input id="random-string-quantity" type="number" min="1" max="100" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))}/>
               </OptionField>
             </div>
             {characterOptions}
             {mode === "string" ? (<label className="random-custom-alphabet">
-                Custom characters (optional)
-                <input value={customAlphabet} onChange={(event) => setCustomAlphabet(event.target.value)} placeholder="Overrides the selected character groups" spellCheck={false}/>
+                {t("settings.customCharacters")}
+                <input value={customAlphabet} onChange={(event) => setCustomAlphabet(event.target.value)} placeholder={t("settings.customPlaceholder")} spellCheck={false}/>
                 <small>
-                  {activeStringAlphabet.length.toLocaleString()} unique
-                  characters available
+                  {t("settings.uniqueCharacters", {
+                    count: activeStringAlphabet.length,
+                })}
                 </small>
-              </label>) : (<div className="random-entropy" aria-label="Password strength estimate">
+              </label>) : (<div className="random-entropy" aria-label={t("settings.strengthAria")}>
                 <span style={{ width: `${Math.min(100, (entropy / 128) * 100)}%` }}/>
-                <strong>{formatEntropy(entropy)}</strong>
-                <small>
-                  Mathematical estimate based on length and the selected
-                  alphabet. It does not assess how a password is stored.
-                </small>
+                <strong>{entropyText}</strong>
+                <small>{t("settings.entropyHint")}</small>
               </div>)}
           </>) : null}
 
         {mode === "list" ? (<>
-            <TextField id="random-list" label="List items, one per line" value={list} onChange={setList} rows={9}/>
+            <TextField id="random-list" label={t("settings.listItems")} value={list} onChange={setList} rows={9}/>
             <div className="random-list-stats">
-              {preparedList.length.toLocaleString()} available items
+              {t("settings.availableItems", { count: preparedList.length })}
             </div>
             <div className="option-row">
-              <OptionField label="List action" htmlFor="list-action">
+              <OptionField label={t("settings.listAction")} htmlFor="list-action">
                 <select id="list-action" value={listAction} onChange={(event) => setListAction(event.target.value as "pick" | "shuffle")}>
-                  <option value="pick">Pick without repeats</option>
-                  <option value="shuffle">Shuffle all items</option>
+                  <option value="pick">
+                    {t("settings.pickWithoutRepeats")}
+                  </option>
+                  <option value="shuffle">{t("settings.shuffleAll")}</option>
                 </select>
               </OptionField>
-              {listAction === "pick" ? (<OptionField label="Items to pick" htmlFor="pick-count">
+              {listAction === "pick" ? (<OptionField label={t("settings.itemsToPick")} htmlFor="pick-count">
                   <input id="pick-count" type="number" min="1" max="100" value={pickCount} onChange={(event) => setPickCount(Number(event.target.value))}/>
                 </OptionField>) : null}
             </div>
             <div className="checkbox-row">
               <label className="checkbox-field">
                 <input type="checkbox" checked={removeDuplicates} onChange={(event) => setRemoveDuplicates(event.target.checked)}/>
-                Remove duplicate items
+                {t("settings.removeDuplicates")}
               </label>
               <label className="checkbox-field">
                 <input type="checkbox" checked={caseSensitiveItems} disabled={!removeDuplicates} onChange={(event) => setCaseSensitiveItems(event.target.checked)}/>
-                Treat letter case as different
+                {t("settings.caseSensitive")}
               </label>
             </div>
           </>) : null}
 
         {mode === "dice" ? (<>
-            <div className="random-presets" aria-label="Common dice">
-              {[4, 6, 8, 10, 12, 20, 100].map((sides) => (<button type="button" className={diceSides === sides ? "active" : ""} onClick={() => setDiceSides(sides)} key={sides}>
+            <div className="random-presets" aria-label={t("settings.commonDiceAria")}>
+              {[4, 6, 8, 10, 12, 20, 100].map((sides) => (
+            /* i18n-ignore -- conventional dice notation such as d6 and d20 */
+            <button type="button" className={diceSides === sides ? "active" : ""} onClick={() => setDiceSides(sides)} key={sides}>
                   d{sides}
                 </button>))}
             </div>
             <div className="option-row">
-              <OptionField label="Number of dice" htmlFor="dice-count">
+              <OptionField label={t("settings.diceCount")} htmlFor="dice-count">
                 <input id="dice-count" type="number" min="1" max="100" value={diceCount} onChange={(event) => setDiceCount(Number(event.target.value))}/>
               </OptionField>
-              <OptionField label="Sides per die" htmlFor="dice-sides">
+              <OptionField label={t("settings.diceSides")} htmlFor="dice-sides">
                 <input id="dice-sides" type="number" min="2" max="1000000" value={diceSides} onChange={(event) => setDiceSides(Number(event.target.value))}/>
               </OptionField>
             </div>
           </>) : null}
 
-        {mode === "coin" ? (<OptionField label="Number of flips" htmlFor="coin-count">
+        {mode === "coin" ? (<OptionField label={t("settings.coinCount")} htmlFor="coin-count">
             <input id="coin-count" type="number" min="1" max="100" value={coinCount} onChange={(event) => setCoinCount(Number(event.target.value))}/>
           </OptionField>) : null}
 
         <ToolActions>
           <button type="button" className="primary-button" onClick={generate}>
-            Generate
+            {t("settings.generate")}
           </button>
           <button type="button" className="secondary-button" onClick={clearResult} disabled={!result.length && !error}>
-            <RotateCcw aria-hidden="true"/> Clear result
+            <RotateCcw aria-hidden="true"/> {t("settings.clear")}
           </button>
         </ToolActions>
-        {error ? <ValidationMessage type="error" message={error}/> : null}
+        {error ? (<ValidationMessage type="error" message={t(`errors.${error.key}`, error.values)}/>) : null}
       </section>
 
       <section className="random-output-panel">
         <div className="random-section-heading">
           <div>
-            <p className="eyebrow">Result</p>
-            <h2>{result.length ? "Generated values" : "Ready to generate"}</h2>
+            <p className="eyebrow">{t("result.eyebrow")}</p>
+            <h2>{result.length ? t("result.generated") : t("result.ready")}</h2>
           </div>
           {result.length ? <span>{result.length}</span> : null}
         </div>
         <div className="random-result" aria-live="polite">
-          {resultText || "Your result will appear here."}
+          {resultText || t("result.empty")}
         </div>
         {summary ? <p className="random-summary">{summary}</p> : null}
-        <ToolActions>
+        <ToolActions sticky>
           <CopyButton text={resultText} toolSlug="random-generator">
-            Copy results
+            {t("result.copy")}
           </CopyButton>
-          <DownloadButton content={resultText ? `${resultText}\n` : ""} filename={`random-${mode}-results.txt`} toolSlug="random-generator">
-            <Download aria-hidden="true"/> Download .txt
+          <DownloadButton content={resultText ? `${resultText}\n` : ""} filename={t("result.filename", { mode })} toolSlug="random-generator">
+            <Download aria-hidden="true"/> {t("result.download")}
           </DownloadButton>
         </ToolActions>
       </section>
 
       <p className="tool-note random-guidance">
         {mode === "password"
-            ? "Every password contains at least one character from each selected group. Store generated passwords in a trusted password manager."
+            ? t("guidance.password")
             : mode === "dice" || mode === "coin"
-                ? "Dice and coin modes are casual utilities and are not intended for regulated or high-stakes decisions."
-                : "Values are generated with the browser’s cryptographic random source."}
+                ? t("guidance.chance")
+                : t("guidance.random")}
       </p>
     </div>);
 }

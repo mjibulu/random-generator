@@ -18,7 +18,7 @@
   border-radius: 8px;
   background: var(--color-surface);
   cursor: pointer;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
 }
 
 .mode-grid button.active {
@@ -67,8 +67,8 @@
 
 .random-section-heading h2 {
   margin: .15rem 0 0;
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium);
 }
 
 .random-section-heading svg {
@@ -83,7 +83,7 @@
   place-items: center;
   color: var(--color-accent);
   font-size: .78rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-semibold);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
 }
@@ -99,7 +99,7 @@
   margin-top: .8rem;
   color: var(--color-text-muted);
   font-size: .78rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .random-custom-alphabet input {
@@ -116,7 +116,7 @@
 .random-list-stats {
   color: var(--color-text-muted);
   font-size: .7rem;
-  font-weight: 450;
+  font-weight: var(--font-weight-regular);
 }
 
 .random-entropy {
@@ -158,7 +158,7 @@
 
 .random-list-stats {
   margin-top: .45rem;
-  text-align: right;
+  text-align: end;
 }
 
 .random-presets {
@@ -240,4 +240,97 @@
 .random-workbench > .mode-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+.random-workbench {
+  font-size: 0.875rem;
+}
+
+.random-section-heading h2 {
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+.random-summary {
+  font-size: 0.775rem;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.45;
+}
+
+.mode-grid button {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.775rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.random-section-heading h2 {
+  margin-top: 0.1rem;
+}
+
+.random-section-heading > span {
+  font-size: 0.725rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.random-custom-alphabet {
+  font-size: 0.725rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.random-custom-alphabet input {
+  min-height: 40px;
+  padding: 0.5rem 0.65rem;
+  font: var(--font-weight-regular) 0.8rem/1.4 ui-monospace,
+    SFMono-Regular, Consolas, monospace;
+}
+
+.random-custom-alphabet small,
+.random-list-stats {
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-regular);
+}
+
+.random-entropy strong {
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.random-entropy small {
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.4;
+}
+
+.random-presets button {
+  min-width: 42px;
+  min-height: 34px;
+  font: var(--font-weight-medium) 0.7rem/1 ui-monospace,
+    SFMono-Regular, Consolas, monospace;
+}
+
+.random-settings-panel .secondary-button,
+.random-output-panel .download-button {
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.random-result {
+  font: var(--font-weight-regular) 0.875rem/1.5 ui-monospace,
+    "SFMono-Regular", Consolas, monospace;
+}
+
+.random-summary {
+  font-size: 0.725rem;
+}
+
+.random-workbench strong {
+  font-weight: var(--font-weight-medium);
+}
+
+.random-summary,
+.random-entropy small,
+.random-custom-alphabet small,
+.random-list-stats {
+  font-weight: var(--font-weight-regular);
 }
